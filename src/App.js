@@ -9,31 +9,42 @@ class App extends Component {
 			data: {
 				items: []
 			},
-			viewData: [],
 			searchTerm: '',
+			typingTimeout: 0,
 		};
 		this.onTyping = this.onTyping.bind(this);
+		this.callApi = this.callApi.bind(this);
 	}
 
 	componentDidMount() {
+		this.callApi();
+	}
+
+	onTyping(e) {
+		const self = this;
+		if (this.state.typingTimeout) {
+			clearTimeout(this.state.typingTimeout);
+		}
+		this.setState({
+			searchTerm: e.target.value,
+			typingTimeout: setTimeout(() => {
+					self.callApi();
+				}, 300),
+		})
+	}
+
+	callApi() {
 		var proxyUrl = 'https://cors-anywhere.herokuapp.com/',
-			targetUrl = 'https://www.flickr.com/services/feeds/photos_public.gne?format=json&nojsoncallback=true'
+			targetUrl = `https://www.flickr.com/services/feeds/photos_public.gne?format=json&nojsoncallback=true`
 		fetch(proxyUrl + targetUrl)
 		.then(blob => blob.json())
 		.then(data => {
 			this.setState({
-				data: data,
-				viewData: data.items,
+				data: this.filterContent(data.items, this.state.searchTerm),
 			});
 		})
 		.catch(e => {
 			console.log(e);
-		});
-	}
-
-	onTyping(e) {
-		this.setState({
-			viewData: this.filterContent(this.state.data.items, e.target.value),
 		});
 	}
 
@@ -71,7 +82,7 @@ class App extends Component {
 	}
 
   	render() {
-		const content = this.generateContent(this.state.viewData);
+		const content = this.generateContent(this.state.data);
 		return (
 			<div className="App">
 				<div className="search-input">
